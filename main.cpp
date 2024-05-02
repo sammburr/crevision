@@ -57,7 +57,19 @@ std::vector<std::string> split(std::string s, std::string delimiter) {
 	return res;
 }
 
-int main() {
+void copy_file(const char* from, const char* to) {
+	
+	std::ifstream src(from);
+	std::ofstream dst(to);
+
+	dst << src.rdbuf();
+
+	src.close();
+	dst.close();
+
+}
+
+int main(int argc, char *argv[]) {
 
 	char* path = getenv("HOME");
 	if (!path) {
@@ -66,13 +78,34 @@ int main() {
 	}
 	
 	strcat(path, "/.crevision/topics.csv");
+	std::string old_path = std::string(path);
+
+	if (argc > 1) {
+		if (std::strcmp(argv[1], "undo") == 0) {
+			std::cout << "👍 Loading last operation" << std::endl;
+			strcat(path, ".backup");
+			copy_file(path, old_path.c_str()); 
+			return 0;
+		}
+	}
 
 	std::vector<std::string> lines = get_lines(path);
 
+	
 	// Shuffle the lines after header (first line stays in place)
 	std::random_device rd;	
 	auto rng = std::default_random_engine {rd()};
 	std::shuffle(++std::begin(lines), std::end(lines), rng); 
+
+	// Make a backup of last change
+	strcat(path, ".backup");
+	
+	std::cout << old_path << std::endl;
+	std::cout << path << std::endl;
+	
+	copy_file(old_path.c_str(), path); 
+	
+	strcpy(path, old_path.c_str());
 
 	// Copy vector before erasing header for parsing
 	std::vector<std::string> lines_cpy = lines;
